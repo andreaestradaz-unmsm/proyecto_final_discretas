@@ -12,16 +12,26 @@ Este proyecto se desarrolló demostrando maestría en los siguientes temas:
 2. **Conteo (Principio de Multiplicación)**: Cálculo del espacio de figuras finitas (7 Tetrominós x 4 posibles rotaciones).
 3. **Eficiencia y Notación O(1)**: Evaluación de filas completadas comprobando la igualdad del entero base (1023) reduciendo la complejidad del peor caso de $O(N \times M)$ a $O(1)$ por fila.
 4. **Teoría de Conjuntos**: Operaciones booleanas a nivel de bit (Operador `|` OR) para asentar las celdas de las piezas dentro del superconjunto del tablero general.
-5. **Aritmética Modular**: Regulación del ciclo de rotación biyectivo empleando aritmética módulo 4 (`(estado + 1) % 4`).
+5. **Aritmética Modular**: Regulación del ciclo de rotación biyectivo empleando aritmética módulo 4 (`(estado + 1) % 4`), y del gestor de escenarios usando módulo 5.
 6. **Sucesiones y Funciones por Partes**: Funciones discretas que controlan el sistema de puntaje según las líneas limpiadas de forma simultánea, y sucesiones geométricas para el aumento gradual de la gravedad.
+7. **Funciones Lineales y Relaciones**: Relación directamente proporcional ($f(x) = x \cdot 1000$) para escalar matemáticamente la meta requerida de cada nivel.
+8. **Búsqueda Algorítmica y Proyecciones**: Implementación del "Bloque Fantasma" calculado mediante una proyección iterativa en el plano Y hasta la resolución afirmativa de la función de colisión.
 
 ---
 
 ## 🚀 Requisitos
 
-Para poder ejecutar este proyecto de manera local solo requieres tener instalado:
+Para poder ejecutar este proyecto de manera local requieres:
 * **Python 3.x**
 * **Flask** (La librería estándar de Python para desarrollo Web)
+
+### 🎵 Requisito de Audio (Opcional pero recomendado)
+Para disfrutar la experiencia inmersiva completa (Niveles dinámicos de Undertale), debes descargar en formato `.mp3` los 5 temas oficiales de los escenarios y colocarlos dentro de la carpeta `soundtracks/` en la raíz del proyecto. Los nombres exactos deben ser:
+- `fallendown.mp3`
+- `snowy.mp3`
+- `waterfall.mp3`
+- `core.mp3`
+- `memory.mp3`
 
 ## 🛠️ Instrucciones de Instalación y Ejecución
 
