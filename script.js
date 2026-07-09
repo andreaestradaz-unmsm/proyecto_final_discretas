@@ -40,7 +40,7 @@ function updateStage(level) {
         const newAudio = document.getElementById(STAGES[newStageIndex].audioId);
         if (newAudio && audioCtx.state === 'running') {
             newAudio.currentTime = 0;
-            newAudio.volume = 0.5; // Volumen moderado
+            newAudio.volume = 0.15; // Volumen moderado bajo (15%) para no asustar
             newAudio.play().catch(e => console.log("Audio block:", e));
         }
         
