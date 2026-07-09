@@ -1,135 +1,212 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap');
-
-/* Estilo visual moderno y atractivo (Glassmorphism) */
-body {
-    background: linear-gradient(135deg, #0b0914, #16102b, #131b33);
-    color: #fff;
-    font-family: 'Outfit', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
+* {
+    box-sizing: border-box;
     margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #000;
+    /* Usar la imagen generada por IA para el fondo de Snowdin */
+    background: url('assets/bg.png') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    font-family: 'Press Start 2P', monospace; /* Tipo de letra Undertale */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     overflow: hidden;
-}
-
-h1 {
-    font-size: 2.8rem;
-    background: linear-gradient(to right, #00f2fe, #4facfe, #f093fb, #f5576c);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    font-weight: 700;
-}
-
-h3 {
-    color: #a2a2d0;
-    margin-top: 0;
-    margin-bottom: 30px;
-    font-weight: 300;
-    letter-spacing: 1px;
+    position: relative;
 }
 
 #game-container {
     display: flex;
     gap: 30px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    padding: 30px;
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    align-items: flex-end; 
+    z-index: 10;
 }
 
-canvas {
-    background-color: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+/* Paneles clásicos de Undertale (Negro con borde blanco) */
+.ut-panel {
+    border: 4px solid #fff;
+    background-color: #000;
+    padding: 20px;
+    text-align: center;
+    width: 220px;
 }
 
-#sidebar {
+.ut-panel h2 {
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.ut-panel .value {
+    font-size: 20px;
+    margin-bottom: 30px;
+}
+
+#left-panel {
+    margin-bottom: 40px;
+}
+
+#right-panel {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    width: 160px;
+    margin-bottom: 40px;
 }
 
-.panel {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px 20px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+#title-text {
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease, border-color 0.3s ease;
+    margin: 10px 0;
+}
+#title-text h2 { font-size: 16px; margin-bottom: 10px; }
+#title-text h3 { font-size: 12px; margin-bottom: 15px; }
+.ut-heart { color: #ff0000; font-size: 24px; animation: heartbeat 1s infinite; }
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
 }
 
-.panel:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.15);
+/* Tablero Central */
+#center-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.panel h2 {
-    margin-top: 0;
-    font-size: 0.85rem;
-    color: #b3b3e6;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 400;
+#board-container {
+    border: 6px solid #222;
+    background-color: #000;
+    box-shadow: 0 0 0 4px #444; /* Simula un tronco de árbol oscuro */
+    position: relative;
 }
 
-.value {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #fff;
-    text-shadow: 0 2px 10px rgba(255,255,255,0.2);
-}
-
-#next-piece {
-    width: 120px;
-    height: 120px;
-    background: transparent;
-    margin: 0 auto;
+canvas#tetris {
     display: block;
-    border: none;
-    box-shadow: none;
+    background: 
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
 }
 
+/* SANS y TRONCO - superpuestos encima del tablero */
+#tronco {
+    position: absolute;
+    /* Se alinea sobre el tablero y baja 10px para superponerse con el borde */
+    bottom: calc(100% - 15px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250px;
+    height: auto;
+    image-rendering: pixelated;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#sans-container {
+    position: absolute;
+    /* Se posiciona para quedar sentado en el tronco */
+    bottom: calc(100% + 15px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    z-index: 6;
+    pointer-events: none;
+    transition: transform 0.1s ease-in-out;
+}
+
+#sans-sprite {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    display: block;
+}
+
+/* ANIMACIONES SANS - reaccion al presionar tecla y respiracion */
+.sans-idle-bob {
+    transform: translateX(-50%) translateY(2px) !important;
+}
+.sans-press #sans-sprite {
+    transform: translateY(4px);
+}
+.bad-time #sans-sprite {
+    filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 18px #ffff00);
+}
+
+/* GASTER BLASTER - fixed en pantalla, posicionado por JS */
+#gaster-blaster {
+    position: fixed;
+    /* Frame del blaster: 888px ancho x 1568px alto
+       Si mostramos a alto=120px -> ancho del frame = 120*888/1568 = 68px
+       Total 3 frames -> container = 68px ancho */
+    width: 68px;
+    height: 120px;
+    background: url('assets/blaster_spritesheet.png') 0% 0% no-repeat;
+    background-size: 300% auto; /* 3 frames, alto auto proporcional */
+    image-rendering: pixelated;
+    opacity: 0;
+    transform: scale(0.3);
+    transform-origin: left center;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.fire#gaster-blaster {
+    opacity: 1;
+    transform: scale(1);
+    animation: playBlaster 0.6s steps(1) forwards;
+}
+
+@keyframes playBlaster {
+    0%, 33.32% { background-position: 0% 0; }
+    33.33%, 66.65% { background-position: 50% 0; }
+    66.66%, 100% { background-position: 100% 0; }
+}
+
+/* Nota: el rayo láser ahora se dibuja directamente en el canvas de JavaScript
+   para poder apuntar a las coordenadas exactas de las filas destruidas */
+
+
+/* CHAT STYLES */
+#chat-container {
+    width: 220px;
+    height: 180px;
+    border: 4px solid #fff;
+    background: #000;
+    font-size: 8px;
+    padding: 10px;
+    overflow: hidden;
+    position: relative;
+    line-height: 1.6;
+}
+
+#chat-box {
+    position: absolute;
+    bottom: 10px;
+    width: calc(100% - 20px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s;
+}
+
+.chat-msg span.user { color: #f9d423; margin-right: 5px; }
+
+/* GAME OVER */
 #game-over {
     display: none;
-    color: #ff3366;
-    font-weight: 700;
-    font-size: 1.8rem;
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #000;
+    border: 6px solid #fff;
+    padding: 40px;
     text-align: center;
-    text-transform: uppercase;
-    text-shadow: 0 0 20px rgba(255, 51, 102, 0.6);
-    animation: pulse 1.5s infinite;
-    margin-top: 10px;
+    z-index: 100;
+    line-height: 2;
 }
-
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-#instructions {
-    margin-top: 30px;
-    color: #8b8ba7;
-    font-size: 1rem;
-    text-align: center;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 12px 25px;
-    border-radius: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-strong {
-    color: #fff;
-}
+#game-over h1 { color: #ff0000; margin-bottom: 20px; }

@@ -5,11 +5,14 @@ import random
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 # =====================================================================
-# CONCEPTO [Conteo]:
-# AQUÍ SE ESTÁ VIENDO ESTO: Se aplica el "Principio de Multiplicación". 
-# Tenemos 7 tipos de piezas distintas y cada una puede tener hasta 
-# 4 orientaciones (rotaciones). Multiplicando 7 x 4 = 28, obtenemos 
-# todo el espacio finito de figuras posibles con las que interactúa el usuario.
+# MATEMÁTICA DISCRETA - CONCEPTO 1: Teoría de Conjuntos y Combinatoria
+# =====================================================================
+# El conjunto de Tetrominós 'T' está formado por 7 figuras distintas.
+# T = {I, J, L, O, S, T, Z}.
+# Aplicando el "Principio de Multiplicación", si tenemos 7 figuras y
+# cada una puede tener hasta 4 estados de rotación posibles, el tamaño 
+# máximo del espacio muestral de piezas orientadas es 7 x 4 = 28.
+# Esto define el espacio finito de objetos manipulables en el juego.
 # =====================================================================
 PIECES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z']
 
@@ -29,12 +32,15 @@ class TetrisGame:
         self.cols = 10
         
         # =====================================================================
-        # CONCEPTO [Sistemas de numeración y Álgebra de Boole]:
-        # Mejora 1: Tablero Optimizado con Sistemas de Numeración (Bitboards)
-        # AQUÍ SE ESTÁ VIENDO ESTO: En lugar de usar una matriz bidimensional,
-        # el tablero se representa como un arreglo unidimensional de 20 enteros.
-        # Dado que el tablero tiene 10 columnas, cada fila es un número binario
-        # de 10 bits.
+        # MATEMÁTICA DISCRETA - CONCEPTO 2: Álgebra de Boole y Sistemas de Numeración
+        # =====================================================================
+        # En lugar de usar una matriz tradicional 2D para representar la grilla,
+        # utilizamos un "Bitboard". El tablero es un arreglo 1D de 20 elementos.
+        # Dado que el tablero tiene 10 columnas, cada fila se representa como un 
+        # número entero que, en su forma binaria de 10 bits, mapea el estado de 
+        # las celdas (0 = Vacío, 1 = Ocupado). 
+        # Esto reduce drásticamente el uso de memoria y permite aplicar 
+        # compuertas lógicas matemáticas para colisiones.
         # =====================================================================
         self.board = [0 for _ in range(self.rows)]
         
@@ -42,6 +48,10 @@ class TetrisGame:
         self.lines = 0
         self.level = 1
         self.game_over = False
+        self.last_cleared_rows = []
+        self.clear_time = 0
+        self.game_paused_until = 0
+        self.pending_clear = []
         
         self.current_piece = self.get_random_piece()
         self.next_piece = self.get_random_piece()
@@ -58,6 +68,17 @@ class TetrisGame:
         }
 
     def collide(self, piece, offset_x=0, offset_y=0):
+        # =====================================================================
+        # MATEMÁTICA DISCRETA - CONCEPTO 3: Operaciones Lógicas (AND) y Traslación
+        # =====================================================================
+        # Para detectar una colisión evaluamos la conjunción (AND lógico).
+        # Para cada bloque de la pieza, calculamos su coordenada global (nx, ny)
+        # mediante una Transformación de Traslación (suma de vectores).
+        # Luego evaluamos la condición Booleana:
+        # colision = (fuera_de_limites) OR ( (tablero[ny] AND (2^nx)) != 0 )
+        # Si un bit de la pieza y un bit del tablero coinciden en 1, el AND 
+        # lógico da un resultado > 0, demostrando intersección de conjuntos.
+        # =====================================================================
         for y, row in enumerate(piece['matrix']):
             for x, val in enumerate(row):
                 if val != 0:
@@ -71,11 +92,12 @@ class TetrisGame:
 
     def merge(self):
         # =====================================================================
-        # CONCEPTO [Álgebra de Boole / Operadores Bit a Bit]:
-        # AQUÍ SE ESTÁ VIENDO ESTO: Para asentar una pieza, en lugar de 
-        # modificar un array o hacer uniones complejas, usamos la operación 
-        # OR lógico (|) bit a bit. Fusionamos los bits de la pieza directamente 
-        # con el entero de la fila.
+        # MATEMÁTICA DISCRETA - CONCEPTO 4: Teoría de Conjuntos (Unión) y Operador OR
+        # =====================================================================
+        # Al asentar la pieza en el tablero, realizamos la unión de dos 
+        # conjuntos. Matemáticamente, esto equivale al OR lógico bit a bit (|).
+        # tablero_final = tablero_inicial OR mascara_pieza
+        # Modifica directamente la representación entera del bitboard.
         # =====================================================================
         p = self.current_piece
         for y, row in enumerate(p['matrix']):
@@ -85,19 +107,23 @@ class TetrisGame:
 
     def rotate_matrix(self, matrix):
         # =====================================================================
-        # CONCEPTO [Funciones]:
-        # AQUÍ SE ESTÁ VIENDO ESTO: La rotación se define como una función 
-        # matemática biyectiva que toma una matriz bidimensional M y la transforma 
-        # en M'. El mapeo transponga coordenadas: f((x,y)) -> (-y,x).
+        # MATEMÁTICA DISCRETA - CONCEPTO 5: Matrices y Transformaciones Geométricas
+        # =====================================================================
+        # La rotación de una pieza corresponde a una rotación de 90° en álgebra
+        # lineal. Si tratamos la pieza como una matriz cuadrada M, rotarla
+        # 90 grados a la derecha equivale a transponer la matriz (M^T) y luego
+        # revertir el orden de sus columnas.
+        # Función f(x, y) = (-y, x).
         # =====================================================================
         return [list(r) for r in zip(*matrix[::-1])]
 
     def do_rotate(self):
         # =====================================================================
-        # CONCEPTO [Aritmética modular]:
-        # AQUÍ SE ESTÁ VIENDO ESTO: Las piezas rotan dentro de un grupo cíclico.
-        # Al llegar a la 4ta rotación, vuelve a la inicial. El estado 
-        # se rige mediante aritmética modular módulo 4: estado_siguiente = (estado + 1) % 4.
+        # MATEMÁTICA DISCRETA - CONCEPTO 6: Aritmética Modular (Anillos y Grupos)
+        # =====================================================================
+        # Las piezas rotan dentro de un grupo cíclico de orden 4.
+        # Al rotar la pieza 4 veces (360°), esta retorna exactamente a su 
+        # estado inicial, definiendo una relación de congruencia módulo 4.
         # =====================================================================
         original = [row[:] for row in self.current_piece['matrix']]
         self.current_piece['matrix'] = self.rotate_matrix(self.current_piece['matrix'])
@@ -111,42 +137,59 @@ class TetrisGame:
 
     def sweep(self):
         # =====================================================================
-        # CONCEPTO [Eficiencia / Notación O y Sistemas de Numeración]:
-        # AQUÍ SE ESTÁ VIENDO ESTO: Evaluar si una línea está completa ya no 
-        # requiere iterar 10 celdas; simplemente se verifica si el entero de la fila 
-        # es exactamente igual a 1023 (2^10 - 1 en decimal, o sea, 10 unos en binario).
-        # Mejora radicalmente la eficiencia a O(1) por fila.
+        # MATEMÁTICA DISCRETA - CONCEPTO 7: Complejidad Algorítmica (Notación Big O)
         # =====================================================================
-        lines_cleared = 0
+        # Para verificar si una fila (10 columnas) está llena, normalmente
+        # requeriría un tiempo O(n) iterando cada columna.
+        # Gracias a nuestra representación binaria (Bitboard), una fila llena 
+        # equivale al número binario 1111111111_2, que es exactamente 
+        # 2^10 - 1 = 1023. La comparación es matemática y se ejecuta en O(1) constante.
+        # =====================================================================
+        lines_cleared_indices = []
         y = self.rows - 1
         while y >= 0:
             if self.board[y] == 1023:
-                del self.board[y]
-                self.board.insert(0, 0)
-                lines_cleared += 1
-            else:
-                y -= 1
+                lines_cleared_indices.append(y)
+            y -= 1
                 
+        lines_cleared = len(lines_cleared_indices)
         if lines_cleared > 0:
-            # =====================================================================
-            # CONCEPTO [Sucesiones / funciones por partes]:
-            # AQUÍ SE ESTÁ VIENDO ESTO: La fórmula de puntaje es una "Función por 
-            # partes" discreta. f(x) = { 40 si x=1, 100 si x=2, 300 si x=3, 1200 si x=4 } 
-            # Además, la velocidad de caída obedece a una progresión (sucesión) geométrica.
-            # =====================================================================
-            pts = [0, 40, 100, 300, 1200]
-            self.score += pts[lines_cleared] * self.level
-            self.lines += lines_cleared
-            self.level = (self.lines // 10) + 1
+            self.pending_clear = lines_cleared_indices
+            self.last_cleared_rows = lines_cleared_indices
+            self.clear_time = time.time()
+            self.game_paused_until = time.time() + 0.6  # Pausa dramática para el láser
             return 'clear'
         return None
 
     def update_gravity(self):
-        if self.game_over:
+        now = time.time()
+        
+        # Ejecutar la limpieza pendiente después de la pausa
+        if self.pending_clear and now >= self.game_paused_until:
+            lines_cleared = len(self.pending_clear)
+            for y in sorted(self.pending_clear): # del bottom to top? wait, indices are absolute.
+                # Actually, deleting by value or index must be careful.
+                # pending_clear has the original Y coords. We just reconstruct the board without them.
+                pass
+            
+            # Reconstruir el tablero sin las filas completas
+            new_board = [row for i, row in enumerate(self.board) if i not in self.pending_clear]
+            added_rows = self.rows - len(new_board)
+            self.board = [0] * added_rows + new_board
+            
+            # Actualizar puntaje
+            pts = [0, 40, 100, 300, 1200]
+            self.score += pts[lines_cleared] * self.level
+            self.lines += lines_cleared
+            self.level = (self.lines // 10) + 1
+            
+            self.pending_clear = []
+            
+        if self.game_over or now < self.game_paused_until:
             return
         
-        now = time.time()
         # Sucesión geométrica decreciente para la gravedad
+        # Concepto: Progresión Geométrica donde la razón r = 0.85
         drop_interval = 1.0 * (0.85 ** (self.level - 1))
         
         if now - self.last_drop > drop_interval:
@@ -169,7 +212,7 @@ class TetrisGame:
             return 'move'
             
     def do_action(self, action):
-        if self.game_over:
+        if self.game_over or time.time() < self.game_paused_until:
             return None
             
         event = None
@@ -203,6 +246,11 @@ def get_state():
     board_2d = []
     for row_int in game.board:
         board_2d.append(['X' if (row_int & (1 << x)) else 0 for x in range(game.cols)])
+    cleared_rows = []
+    is_clearing = False
+    if time.time() - game.clear_time < 0.6:
+        cleared_rows = game.last_cleared_rows
+        is_clearing = True
         
     return jsonify({
         "board": board_2d,
@@ -211,7 +259,9 @@ def get_state():
         "score": game.score,
         "level": game.level,
         "lines": game.lines,
-        "game_over": game.game_over
+        "game_over": game.game_over,
+        "cleared_rows": cleared_rows,
+        "is_clearing": is_clearing
     })
 
 @app.route('/action', methods=['POST'])
