@@ -9,7 +9,7 @@ const BLOCK_SIZE = 30;
 const COLORS = {
     'I': '#00f2fe', 'J': '#4facfe', 'L': '#ffb347', 'O': '#f9d423',
     'S': '#43e97b', 'T': '#f093fb', 'Z': '#f5576c',
-    'X': '#a2a2d0' // Color para bloques asentados (Bitboard)
+    'X': '#a2a2d0'
 };
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -69,19 +69,40 @@ function drawBlock(context, color, x, y, scale = 1) {
     context.fillRect(dx + size * 0.8, dy, size * 0.2, size);
 }
 
+function drawGhostBlock(context, color, x, y) {
+    const dx = x * BLOCK_SIZE;
+    const dy = y * BLOCK_SIZE;
+    const size = BLOCK_SIZE;
+    
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.strokeRect(dx + 2, dy + 2, size - 4, size - 4);
+    context.fillStyle = color + "22";
+    context.fillRect(dx + 2, dy + 2, size - 4, size - 4);
+}
+
 let gameOverFlag = false;
 
 function render(state) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Dibujar tablero fijado
     state.board.forEach((row, y) => {
         row.forEach((val, x) => {
             if (val !== 0) drawBlock(ctx, COLORS[val], x, y);
         });
     });
 
-    // Dibujar pieza cayendo
+    if (state.current_piece && state.ghost_y !== undefined) {
+        const cp = state.current_piece;
+        cp.matrix.forEach((row, y) => {
+            row.forEach((val, x) => {
+                if (val !== 0) {
+                    drawGhostBlock(ctx, COLORS[cp.type], cp.x + x, state.ghost_y + y);
+                }
+            });
+        });
+    }
+
     if (state.current_piece) {
         const cp = state.current_piece;
         cp.matrix.forEach((row, y) => {
@@ -91,7 +112,6 @@ function render(state) {
         });
     }
 
-    // Dibujar siguiente pieza
     nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
     if (state.next_piece) {
         const np = state.next_piece;
@@ -110,29 +130,29 @@ function render(state) {
     document.getElementById('score').innerText = state.score;
     document.getElementById('level').innerText = state.level;
     document.getElementById('lines').innerText = state.lines;
+    
+    // RENDERIZAR PROGRESO (Puntuación actual / Requerido para acabar el nivel)
+    document.getElementById('level-progress').innerText = `${state.score} / ${state.target_score}`;
 
     if (state.game_over && !gameOverFlag) {
-        document.getElementById('game-over').style.display = 'block';
+        document.getElementById('game-over').style.display = 'flex'; // Usamos flex para centrar botón
         playSound('gameover');
         gameOverFlag = true;
     }
 }
 
-// Bucle del Frontend: Le pregunta el estado actual al servidor Python
 function loopFetch() {
     fetch('/state')
         .then(res => res.json())
         .then(state => {
             render(state);
-            setTimeout(loopFetch, 50); // Refrescar a ~20 FPS para el frontend
+            setTimeout(loopFetch, 50);
         })
         .catch(err => {
-            console.error("No se pudo conectar con el backend de Python. ¿Iniciaste app.py?", err);
             setTimeout(loopFetch, 1000);
         });
 }
 
-// Enviar teclas presionadas al servidor Python
 async function sendAction(action) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     try {
@@ -147,6 +167,18 @@ async function sendAction(action) {
         }
     } catch(e) {}
 }
+
+// DETECTOR DE CLICK EN EL BOTÓN REINTENTAR
+document.getElementById('retry-btn').addEventListener('click', () => {
+    fetch('/reset', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('game-over').style.display = 'none';
+                gameOverFlag = false;
+            }
+        });
+});
 
 document.addEventListener('keydown', event => {
     if (gameOverFlag) return;
