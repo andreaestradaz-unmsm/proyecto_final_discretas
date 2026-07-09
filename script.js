@@ -13,6 +13,42 @@ const COLORS = {
 };
 
 // ==========================================
+// GESTOR DE ESCENARIOS (Stage Manager)
+// ==========================================
+const STAGES = [
+    { bg: 'assets/ruins.png', audioId: 'bgm-ruins' },
+    { bg: 'assets/bg.png', audioId: 'bgm-snowdin' },
+    { bg: 'assets/waterfall.jpg', audioId: 'bgm-waterfall' },
+    { bg: 'assets/hotland.png', audioId: 'bgm-hotland' },
+    { bg: 'assets/newhome.png', audioId: 'bgm-newhome' }
+];
+let currentStageIndex = -1;
+
+function updateStage(level) {
+    const newStageIndex = (level - 1) % 5; // Aritmética modular (0 al 4)
+    if (newStageIndex !== currentStageIndex) {
+        // Pausar música anterior
+        if (currentStageIndex !== -1) {
+            const oldAudio = document.getElementById(STAGES[currentStageIndex].audioId);
+            if (oldAudio) oldAudio.pause();
+        }
+        
+        // Cambiar fondo
+        document.body.style.backgroundImage = `url('${STAGES[newStageIndex].bg}')`;
+        
+        // Intentar reproducir música nueva
+        const newAudio = document.getElementById(STAGES[newStageIndex].audioId);
+        if (newAudio && audioCtx.state === 'running') {
+            newAudio.currentTime = 0;
+            newAudio.volume = 0.5; // Volumen moderado
+            newAudio.play().catch(e => console.log("Audio block:", e));
+        }
+        
+        currentStageIndex = newStageIndex;
+    }
+}
+
+// ==========================================
 // SONIDOS (Estilo Undertale Text Voice)
 // ==========================================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -157,6 +193,9 @@ function render(state) {
     document.getElementById('level-progress').innerText = `${state.score} / ${state.target_score}`;
     document.getElementById('level').innerText = state.level;
     document.getElementById('lines').innerText = state.lines;
+
+    // Actualizar el escenario basado en el nivel
+    updateStage(state.level);
 
     if (state.game_over && !gameOverFlag) {
         document.getElementById('game-over').style.display = 'block';
@@ -311,14 +350,29 @@ async function sendAction(action) {
     } catch(e) {}
 }
 
+// Reanudar Audio Context y Música en la primera interacción
+function initAudio() {
+    if(audioCtx.state === 'suspended') {
+        audioCtx.resume();
+        // Arrancar la música del nivel actual
+        if (currentStageIndex !== -1) {
+            const currentAudio = document.getElementById(STAGES[currentStageIndex].audioId);
+            if (currentAudio && currentAudio.paused) {
+                currentAudio.play().catch(e=>{});
+            }
+        }
+    }
+}
+
 document.addEventListener('keydown', event => {
     if (gameOverFlag) return;
+    initAudio();
     if (event.keyCode === 37) sendAction('left');
     else if (event.keyCode === 39) sendAction('right');
     else if (event.keyCode === 40) sendAction('down');
     else if (event.keyCode === 38) sendAction('rotate');
 });
-document.addEventListener('click', () => { if(audioCtx.state === 'suspended') audioCtx.resume(); });
+document.addEventListener('click', initAudio);
 
 document.getElementById('retry-btn').addEventListener('click', () => {
     fetch('/reset', { method: 'POST' })

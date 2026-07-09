@@ -17,6 +17,7 @@ body {
     height: 100vh;
     overflow: hidden;
     position: relative;
+    transition: background-image 1.5s ease-in-out;
 }
 
 #game-container {
