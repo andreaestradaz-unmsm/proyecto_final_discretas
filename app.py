@@ -63,18 +63,32 @@ class TetrisGame:
         self.reset_state()
         
     def get_target_score(self):
-        # La meta de puntuación para pasar de nivel es progresiva.
+        # =====================================================================
+        # MATEMÁTICA DISCRETA - CONCEPTO 8: Funciones Lineales y Relaciones
+        # =====================================================================
+        # La meta de puntuación para pasar de nivel está definida por una 
+        # función lineal simple f(x) = x * 1000, donde 'x' es el nivel actual.
+        # Esto establece una relación directamente proporcional para escalar 
+        # la dificultad del juego.
+        # =====================================================================
         return self.level * 1000
 
     def get_ghost_y(self):
         if not self.current_piece:
             return 0
         
-        # Clonamos el estado de Y actual
+        # =====================================================================
+        # MATEMÁTICA DISCRETA - CONCEPTO 9: Búsqueda Algorítmica y Proyecciones Geométricas
+        # =====================================================================
+        # Para calcular dónde caerá el "bloque fantasma", hacemos una proyección 
+        # vectorial en el eje Y del plano cartesiano discreto.
+        # Utilizando un algoritmo de búsqueda iterativa, proyectamos la pieza 
+        # hacia abajo (y + 1) de forma recursiva hasta que la función de colisión 
+        # (nuestra comprobación booleana de intersección de conjuntos) retorna TRUE.
+        # El punto previo a la colisión es la máxima traslación posible.
+        # =====================================================================
         ghost_y = self.current_piece['y']
         
-        # Hacemos proyecciones matemáticas usando la función de colisión (intersección nula)
-        # hasta hallar el punto exacto de impacto en el plano discreto.
         while not self.collide(self.current_piece, offset_y=(ghost_y - self.current_piece['y'] + 1)):
             ghost_y += 1
             

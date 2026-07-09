@@ -239,10 +239,19 @@ setInterval(() => {
 // CHAT FALSO (Twitch Style)
 // ==========================================
 const chatBox = document.getElementById('chat-box');
-const fakeChatNames = ['Papyrus', 'Undyne', 'Mettaton', 'Alphys', 'Frisk', 'Toriel', 'Asgore', 'xXx_Flowey_xXx'];
+const fakeChatNames = ['Profe', 'Alumno1', 'Matemático', 'Turing', 'Boole', 'Euler', 'Fermat', 'Lógico'];
 const fakeChatMsgs = [
-    'SANS, VUELVE AL TRABAJO!', 'lol he got dunked on', 'Mettaton: Oh yesss!', 'Anime is real right?', 
-    'determinacion', 'hOI!! im temmie', 'NYEH HEH HEH!', 'sans ur so lazy', 'poggers', 'F', 'get good'
+    'Rotación = Transposición de matriz + Reflejo (Álgebra Lineal)', 
+    'Fila llena = 2^10 - 1 = 1023 (Binario)', 
+    'Las colisiones usan AND lógico bit a bit', 
+    'El tablero es un arreglo 1D (Bitboard optimizado)', 
+    'Unión de conjuntos con OR lógico para asentar piezas', 
+    'Espacio muestral finito: 7 piezas × 4 rotaciones = 28', 
+    'Rotar 4 veces forma un Grupo Cíclico (Módulo 4)', 
+    'Complejidad del borrado mejorada a O(1)', 
+    'La gravedad usa una progresión geométrica (r=0.85)', 
+    'Cada pieza se mueve en un Plano Cartesiano Discreto', 
+    'Excelente aplicación de la Teoría de Grafos en cuadrícula'
 ];
 
 function spawnChatMessage() {
