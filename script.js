@@ -36,12 +36,12 @@ function updateStage(level) {
         // Cambiar fondo
         document.body.style.backgroundImage = `url('${STAGES[newStageIndex].bg}')`;
         
-        // Intentar reproducir música nueva
+        // Intentar reproducir música nueva (el navegador podría bloquearlo si no ha habido interacción)
         const newAudio = document.getElementById(STAGES[newStageIndex].audioId);
-        if (newAudio && audioCtx.state === 'running') {
+        if (newAudio) {
             newAudio.currentTime = 0;
             newAudio.volume = 0.15; // Volumen moderado bajo (15%) para no asustar
-            newAudio.play().catch(e => console.log("Audio block:", e));
+            newAudio.play().catch(e => console.log("Audio block by browser:", e));
         }
         
         currentStageIndex = newStageIndex;
@@ -265,6 +265,23 @@ function animateSansController() {
         }, 150);
     }
 }
+
+// ==========================================
+// DESBLOQUEO DE AUDIO (Autoplay Policy)
+// ==========================================
+// Los navegadores modernos bloquean el audio hasta que el usuario interactúa.
+// Este evento captura la primera tecla presionada para iniciar la música del nivel 1.
+window.addEventListener('keydown', () => {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    if (currentStageIndex !== -1) {
+        const bgAudio = document.getElementById(STAGES[currentStageIndex].audioId);
+        if (bgAudio && bgAudio.paused) {
+            bgAudio.play().catch(e => console.log("Audio still blocked:", e));
+        }
+    }
+}, { once: true });
 
 // Animación de respiración idle (arriba y abajo muy suave)
 setInterval(() => {
