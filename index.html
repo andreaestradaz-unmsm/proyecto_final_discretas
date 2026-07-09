@@ -11,13 +11,17 @@
     <h3>Laboratorio de Matemática Discreta</h3>
     
     <div id="game-container">
-        <!-- Lienzo principal del juego -->
-        <canvas id="tetris" width="300" height="600"></canvas>
+        <canvas id="tetris" width="300" height="600\"></canvas>
         
         <div id="sidebar">
             <div class="panel">
                 <h2>🏆 Puntaje</h2>
                 <div id="score" class="value">0</div>
+            </div>
+
+            <div class="panel">
+                <h2>🎯 Meta Nivel</h2>
+                <div id="level-progress" class="value" style="font-size: 1.3rem; margin-top: 5px;">0 / 1000</div>
             </div>
             
             <div class="panel">
@@ -35,7 +39,10 @@
                 <canvas id="next-piece"></canvas>
             </div>
             
-            <div id="game-over">¡DERROTA!</div>
+            <div id="game-over">
+                <div style="font-weight: 700; letter-spacing: 1px;">¡DERROTA!</div>
+                <button id="retry-btn">Reintentar</button>
+            </div>
         </div>
     </div>
     
@@ -43,7 +50,6 @@
         Usa las <strong>flechas del teclado</strong> para mover ⬅️ ➡️, rotar ⬆️ y bajar ⬇️.
     </div>
     
-    <!-- Lógica del juego conectada al servidor Flask -->
     <script src="script.js"></script>
 </body>
 </html>
