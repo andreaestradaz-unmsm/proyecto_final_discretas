@@ -18,7 +18,7 @@ const COLORS = {
 const STAGES = [
     { bg: 'assets/ruins.png', audioId: 'bgm-ruins' },
     { bg: 'assets/bg.png', audioId: 'bgm-snowdin' },
-    { bg: 'assets/waterfall.jpg', audioId: 'bgm-waterfall' },
+    { bg: 'assets/waterfall.png', audioId: 'bgm-waterfall' },
     { bg: 'assets/hotland.png', audioId: 'bgm-hotland' },
     { bg: 'assets/newhome.png', audioId: 'bgm-newhome' }
 ];
