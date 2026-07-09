@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Educativo - Matemática Discreta</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>TETRIS EDUCATIVO</h1>
+    <h3>Laboratorio de Matemática Discreta</h3>
+    
+    <div id="game-container">
+        <!-- Lienzo principal del juego -->
+        <canvas id="tetris" width="300" height="600"></canvas>
+        
+        <div id="sidebar">
+            <div class="panel">
+                <h2>🏆 Puntaje</h2>
+                <div id="score" class="value">0</div>
+            </div>
+            
+            <div class="panel">
+                <h2>⭐ Nivel</h2>
+                <div id="level" class="value">1</div>
+            </div>
+            
+            <div class="panel">
+                <h2>🔥 Líneas</h2>
+                <div id="lines" class="value">0</div>
+            </div>
+            
+            <div class="panel">
+                <h2>Siguiente</h2>
+                <canvas id="next-piece"></canvas>
+            </div>
+            
+            <div id="game-over">¡DERROTA!</div>
+        </div>
+    </div>
+    
+    <div id="instructions">
+        Usa las <strong>flechas del teclado</strong> para mover ⬅️ ➡️, rotar ⬆️ y bajar ⬇️.
+    </div>
+    
+    <!-- Lógica del juego conectada al servidor Flask -->
+    <script src="script.js"></script>
+</body>
+</html>
