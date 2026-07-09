@@ -73,6 +73,18 @@ function drawBlock(context, color, x, y, scale = 1) {
     context.strokeRect(dx, dy, size, size);
 }
 
+function drawGhostBlock(context, color, x, y) {
+    const dx = x * BLOCK_SIZE;
+    const dy = y * BLOCK_SIZE;
+    const size = BLOCK_SIZE;
+    
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.strokeRect(dx + 2, dy + 2, size - 4, size - 4);
+    context.fillStyle = color + "22"; // Transparente
+    context.fillRect(dx + 2, dy + 2, size - 4, size - 4);
+}
+
 let gameOverFlag = false;
 
 function render(state) {
@@ -84,6 +96,18 @@ function render(state) {
             if (val !== 0) drawBlock(ctx, COLORS[val], x, y);
         });
     });
+
+    // Pieza fantasma (Ghost piece)
+    if (state.current_piece && state.ghost_y !== undefined) {
+        const cp = state.current_piece;
+        cp.matrix.forEach((row, y) => {
+            row.forEach((val, x) => {
+                if (val !== 0) {
+                    drawGhostBlock(ctx, COLORS[cp.type], cp.x + x, state.ghost_y + y);
+                }
+            });
+        });
+    }
 
     // Pieza cayendo
     if (state.current_piece) {
@@ -130,6 +154,7 @@ function render(state) {
     
     // Texto
     document.getElementById('score').innerText = String(state.score).padStart(6, '0');
+    document.getElementById('level-progress').innerText = `${state.score} / ${state.target_score}`;
     document.getElementById('level').innerText = state.level;
     document.getElementById('lines').innerText = state.lines;
 
@@ -285,5 +310,16 @@ document.addEventListener('keydown', event => {
     else if (event.keyCode === 38) sendAction('rotate');
 });
 document.addEventListener('click', () => { if(audioCtx.state === 'suspended') audioCtx.resume(); });
+
+document.getElementById('retry-btn').addEventListener('click', () => {
+    fetch('/reset', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'ok') {
+                document.getElementById('game-over').style.display = 'none';
+                gameOverFlag = false;
+            }
+        });
+});
 
 loopFetch();

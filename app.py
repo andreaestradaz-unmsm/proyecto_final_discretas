@@ -30,7 +30,9 @@ class TetrisGame:
     def __init__(self):
         self.rows = 20
         self.cols = 10
+        self.reset_state()
         
+    def reset_state(self):
         # =====================================================================
         # MATEMÁTICA DISCRETA - CONCEPTO 2: Álgebra de Boole y Sistemas de Numeración
         # =====================================================================
@@ -57,6 +59,27 @@ class TetrisGame:
         self.next_piece = self.get_random_piece()
         self.last_drop = time.time()
         
+    def reset(self):
+        self.reset_state()
+        
+    def get_target_score(self):
+        # La meta de puntuación para pasar de nivel es progresiva.
+        return self.level * 1000
+
+    def get_ghost_y(self):
+        if not self.current_piece:
+            return 0
+        
+        # Clonamos el estado de Y actual
+        ghost_y = self.current_piece['y']
+        
+        # Hacemos proyecciones matemáticas usando la función de colisión (intersección nula)
+        # hasta hallar el punto exacto de impacto en el plano discreto.
+        while not self.collide(self.current_piece, offset_y=(ghost_y - self.current_piece['y'] + 1)):
+            ghost_y += 1
+            
+        return ghost_y
+
     def get_random_piece(self):
         ptype = random.choice(PIECES)
         matrix = [row[:] for row in SHAPES[ptype]]
@@ -256,10 +279,12 @@ def get_state():
         "board": board_2d,
         "current_piece": game.current_piece,
         "next_piece": game.next_piece,
+        "ghost_y": game.get_ghost_y(),
         "score": game.score,
         "level": game.level,
         "lines": game.lines,
         "game_over": game.game_over,
+        "target_score": game.get_target_score(),
         "cleared_rows": cleared_rows,
         "is_clearing": is_clearing
     })
@@ -270,6 +295,11 @@ def action():
     act = data.get('action')
     event = game.do_action(act)
     return jsonify({"status": "ok", "event": event})
+
+@app.route('/reset', methods=['POST'])
+def reset():
+    game.reset()
+    return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
     print("=============================================================")

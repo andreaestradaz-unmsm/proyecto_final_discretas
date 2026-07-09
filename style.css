@@ -210,3 +210,5 @@ canvas#tetris {
     line-height: 2;
 }
 #game-over h1 { color: #ff0000; margin-bottom: 20px; }
+
+#retry-btn { margin-top: 20px; font-family: 'Press Start 2P', monospace; background-color: #000; color: #fff; border: 2px solid #fff; padding: 10px; cursor: pointer; text-transform: uppercase; } #retry-btn:hover { background-color: #fff; color: #000; }
