@@ -9,6 +9,43 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="start-screen" class="ut-overlay">
+        <div id="start-content" class="ut-panel ut-overlay-panel">
+            <h1 style="font-size: 24px; margin-bottom: 30px;">TETRIS EDUCATIVO</h1>
+            <h2 style="font-size: 16px; margin-bottom: 20px;">SANS' EDITION</h2>
+            <p style="font-size: 10px; margin-bottom: 30px; line-height: 1.6;">
+                Juego de Matemática Discreta<br>
+                Aprende mientras juegas
+            </p>
+            <button id="start-btn" class="ut-btn">JUGAR</button>
+            <p style="font-size: 8px; margin-top: 30px; line-height: 1.4;">
+                Controles: Flechas para mover<br>
+                Flecha Arriba para rotar<br>
+                P para pausar/reanudar
+            </p>
+        </div>
+    </div>
+
+    <div id="pause-screen" class="ut-overlay" style="display: none;">
+        <div id="pause-content" class="ut-panel ut-overlay-panel">
+            <h1 style="font-size: 20px; margin-bottom: 30px;">PAUSA</h1>
+            <p style="font-size: 10px; margin-bottom: 30px;">El juego está congelado</p>
+            <button id="resume-btn" class="ut-btn">CONTINUAR</button>
+            <button id="pause-menu-btn" class="ut-btn" style="margin-top: 15px; background-color: #444;">MENÚ</button>
+        </div>
+    </div>
+
+    <div id="game-over" class="ut-overlay" style="display: none;">
+        <div id="game-over-content" class="ut-panel ut-overlay-panel">
+            <h1 style="color: #ff0000; font-size: 20px; margin-bottom: 20px;">GAME OVER</h1>
+            <p style="font-size: 10px; margin-bottom: 30px;">Espacio de estados agotado.</p>
+            <button id="retry-btn" class="ut-btn">REINTENTAR</button>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- INTERFAZ PRINCIPAL DEL JUEGO -->
+    <!-- ================================================================== -->
     <div id="game-container">
         <!-- Panel Izquierdo: Estadísticas -->
         <div id="left-panel" class="ut-panel">
@@ -53,13 +90,6 @@
                 <div id="chat-box"></div>
             </div>
         </div>
-    </div>
-    
-    <!-- Game Over Screen -->
-    <div id="game-over">
-        <h1>GAME OVER</h1>
-        <p>Espacio de estados agotado.</p>
-        <button id="retry-btn">Reintentar</button>
     </div>
 
     <!-- Pistas de Audio (Soundtracks de Escenarios) -->

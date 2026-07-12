@@ -1,18 +1,29 @@
 from flask import Flask, send_file, jsonify, request
 import time
 import random
+from enum import Enum
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 # =====================================================================
-# MATEMÁTICA DISCRETA - CONCEPTO 1: Teoría de Conjuntos y Combinatoria
+# CONCEPTO 18: Gramáticas y Autómatas (AFD)
 # =====================================================================
-# El conjunto de Tetrominós 'T' está formado por 7 figuras distintas.
-# T = {I, J, L, O, S, T, Z}.
-# Aplicando el "Principio de Multiplicación", si tenemos 7 figuras y
-# cada una puede tener hasta 4 estados de rotación posibles, el tamaño 
-# máximo del espacio muestral de piezas orientadas es 7 x 4 = 28.
-# Esto define el espacio finito de objetos manipulables en el juego.
+# Se refactorizó el control del juego usando un Autómata Finito 
+# Determinista (AFD). Los estados son los nodos y las transiciones 
+# evitan lógicamente estados inválidos (ej. pausar estando en GAME_OVER).
+# =====================================================================
+class GameState(Enum):
+    START_SCREEN = "start_screen"
+    PLAYING = "playing"
+    PAUSED = "paused"
+    GAME_OVER = "game_over"
+    RESUMING = "resuming"
+
+# =====================================================================
+# CONCEPTO 5: Conteo y Combinatoria (Principio de Multiplicación)
+# =====================================================================
+# Hay 7 piezas distintas. Si cada una tiene 4 rotaciones posibles, 
+# el total de estados pieza-rotación en el espacio muestral es 7 x 4 = 28.
 # =====================================================================
 PIECES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z']
 
@@ -30,26 +41,23 @@ class TetrisGame:
     def __init__(self):
         self.rows = 20
         self.cols = 10
+        self._state = GameState.START_SCREEN
+        self._state_enter_time = time.time()
         self.reset_state()
         
     def reset_state(self):
         # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 2: Álgebra de Boole y Sistemas de Numeración
+        # MEJORA 1: Sistemas de Numeración (Bitboards)
         # =====================================================================
-        # En lugar de usar una matriz tradicional 2D para representar la grilla,
-        # utilizamos un "Bitboard". El tablero es un arreglo 1D de 20 elementos.
-        # Dado que el tablero tiene 10 columnas, cada fila se representa como un 
-        # número entero que, en su forma binaria de 10 bits, mapea el estado de 
-        # las celdas (0 = Vacío, 1 = Ocupado). 
-        # Esto reduce drásticamente el uso de memoria y permite aplicar 
-        # compuertas lógicas matemáticas para colisiones.
+        # En lugar de usar una matriz bidimensional (Array de Arrays), el 
+        # tablero se representa como un arreglo unidimensional de 20 enteros. 
+        # Cada fila es un número binario de 10 bits.
         # =====================================================================
         self.board = [0 for _ in range(self.rows)]
         
         self.score = 0
         self.lines = 0
         self.level = 1
-        self.game_over = False
         self.last_cleared_rows = []
         self.clear_time = 0
         self.game_paused_until = 0
@@ -58,43 +66,67 @@ class TetrisGame:
         self.current_piece = self.get_random_piece()
         self.next_piece = self.get_random_piece()
         self.last_drop = time.time()
-        
-    def reset(self):
-        self.reset_state()
+    
+    def get_state(self):
+        return self._state
+    
+    def transition_to(self, new_state):
+        valid_transitions = {
+            GameState.START_SCREEN: [GameState.PLAYING],
+            GameState.PLAYING: [GameState.PAUSED, GameState.GAME_OVER],
+            GameState.PAUSED: [GameState.RESUMING, GameState.START_SCREEN],
+            GameState.RESUMING: [GameState.PLAYING],
+            GameState.GAME_OVER: [GameState.START_SCREEN]
+        }
+        if new_state in valid_transitions.get(self._state, []):
+            self._state = new_state
+            self._state_enter_time = time.time()
+            return True
+        return False
+    
+    def start_game(self): return self.transition_to(GameState.PLAYING)
+    def pause_game(self): return self.transition_to(GameState.PAUSED)
+    def resume_game(self):
+        if self.transition_to(GameState.RESUMING):
+            self.transition_to(GameState.PLAYING)
+            self.last_drop = time.time()
+            return True
+        return False
+    def end_game(self): return self.transition_to(GameState.GAME_OVER)
+    def reset_to_start(self):
+        if self._state in [GameState.GAME_OVER, GameState.PAUSED]:
+            if self.transition_to(GameState.START_SCREEN):
+                self.reset_state()
+                return True
+        return False
+    def reset(self): self.reset_to_start()
         
     def get_target_score(self):
-        # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 8: Funciones Lineales y Relaciones
-        # =====================================================================
-        # La meta de puntuación para pasar de nivel está definida por una 
-        # función lineal simple f(x) = x * 1000, donde 'x' es el nivel actual.
-        # Esto establece una relación directamente proporcional para escalar 
-        # la dificultad del juego.
-        # =====================================================================
         return self.level * 1000
 
     def get_ghost_y(self):
-        if not self.current_piece:
-            return 0
+        if not self.current_piece: return 0
         
         # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 9: Búsqueda Algorítmica y Proyecciones Geométricas
+        # MEJORA 3: "Ghost Piece" usando Caminos y Búsqueda (Grafos)
         # =====================================================================
-        # Para calcular dónde caerá el "bloque fantasma", hacemos una proyección 
-        # vectorial en el eje Y del plano cartesiano discreto.
-        # Utilizando un algoritmo de búsqueda iterativa, proyectamos la pieza 
-        # hacia abajo (y + 1) de forma recursiva hasta que la función de colisión 
-        # (nuestra comprobación booleana de intersección de conjuntos) retorna TRUE.
-        # El punto previo a la colisión es la máxima traslación posible.
+        # Se modela la caída como el cálculo del camino más largo en un grafo 
+        # dirigido hacia abajo, iterando hasta encontrar una intersección 
+        # de conjuntos (colisión) con los bloques ya fijados.
         # =====================================================================
         ghost_y = self.current_piece['y']
-        
         while not self.collide(self.current_piece, offset_y=(ghost_y - self.current_piece['y'] + 1)):
             ghost_y += 1
-            
         return ghost_y
 
     def get_random_piece(self):
+        # =====================================================================
+        # CONCEPTO 11: Conteo / Combinatoria (Pieza I)
+        # =====================================================================
+        # Si la pieza 'I' se coloca horizontalmente (tamaño 4) en este 
+        # tablero de 10 columnas, cabe en exactamente 7 posiciones.
+        # Fórmula: (Columnas_Totales - Tamaño_Pieza) + 1 -> 10 - 4 + 1 = 7.
+        # =====================================================================
         ptype = random.choice(PIECES)
         matrix = [row[:] for row in SHAPES[ptype]]
         return {
@@ -105,17 +137,6 @@ class TetrisGame:
         }
 
     def collide(self, piece, offset_x=0, offset_y=0):
-        # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 3: Operaciones Lógicas (AND) y Traslación
-        # =====================================================================
-        # Para detectar una colisión evaluamos la conjunción (AND lógico).
-        # Para cada bloque de la pieza, calculamos su coordenada global (nx, ny)
-        # mediante una Transformación de Traslación (suma de vectores).
-        # Luego evaluamos la condición Booleana:
-        # colision = (fuera_de_limites) OR ( (tablero[ny] AND (2^nx)) != 0 )
-        # Si un bit de la pieza y un bit del tablero coinciden en 1, el AND 
-        # lógico da un resultado > 0, demostrando intersección de conjuntos.
-        # =====================================================================
         for y, row in enumerate(piece['matrix']):
             for x, val in enumerate(row):
                 if val != 0:
@@ -129,12 +150,10 @@ class TetrisGame:
 
     def merge(self):
         # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 4: Teoría de Conjuntos (Unión) y Operador OR
+        # CONCEPTO 2: Conjuntos (Operación de Unión)
         # =====================================================================
-        # Al asentar la pieza en el tablero, realizamos la unión de dos 
-        # conjuntos. Matemáticamente, esto equivale al OR lógico bit a bit (|).
-        # tablero_final = tablero_inicial OR mascara_pieza
-        # Modifica directamente la representación entera del bitboard.
+        # Cuando una pieza se fija, ocurre una Unión de conjuntos entre la 
+        # zona ya ocupada y las coordenadas de la nueva pieza (usando OR a nivel de bits).
         # =====================================================================
         p = self.current_piece
         for y, row in enumerate(p['matrix']):
@@ -144,23 +163,20 @@ class TetrisGame:
 
     def rotate_matrix(self, matrix):
         # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 5: Matrices y Transformaciones Geométricas
+        # CONCEPTO 3 y 14: Funciones (Rotación Biyectiva)
         # =====================================================================
-        # La rotación de una pieza corresponde a una rotación de 90° en álgebra
-        # lineal. Si tratamos la pieza como una matriz cuadrada M, rotarla
-        # 90 grados a la derecha equivale a transponer la matriz (M^T) y luego
-        # revertir el orden de sus columnas.
-        # Función f(x, y) = (-y, x).
+        # La rotación transforma la orientación. Se modela como una función 
+        # biyectiva (permutación de coordenadas matriciales), garantizando que 
+        # cada estado tiene un único estado siguiente (sin pérdida de datos).
         # =====================================================================
         return [list(r) for r in zip(*matrix[::-1])]
 
     def do_rotate(self):
         # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 6: Aritmética Modular (Anillos y Grupos)
+        # CONCEPTO 4: Aritmética Modular
         # =====================================================================
-        # Las piezas rotan dentro de un grupo cíclico de orden 4.
-        # Al rotar la pieza 4 veces (360°), esta retorna exactamente a su 
-        # estado inicial, definiendo una relación de congruencia módulo 4.
+        # Las orientaciones rotan en ciclo módulo 4: (orientacion + 1) % 4.
+        # Después de la orientación 3, sigue la orientación 0.
         # =====================================================================
         original = [row[:] for row in self.current_piece['matrix']]
         self.current_piece['matrix'] = self.rotate_matrix(self.current_piece['matrix'])
@@ -174,13 +190,12 @@ class TetrisGame:
 
     def sweep(self):
         # =====================================================================
-        # MATEMÁTICA DISCRETA - CONCEPTO 7: Complejidad Algorítmica (Notación Big O)
+        # CONCEPTO 1, 8 y 9: Lógica, Eficiencia O(1) y Sistemas de Numeración
         # =====================================================================
-        # Para verificar si una fila (10 columnas) está llena, normalmente
-        # requeriría un tiempo O(n) iterando cada columna.
-        # Gracias a nuestra representación binaria (Bitboard), una fila llena 
-        # equivale al número binario 1111111111_2, que es exactamente 
-        # 2^10 - 1 = 1023. La comparación es matemática y se ejecuta en O(1) constante.
+        # Lógica proposicional: "Línea completa" es verdadera cuando la 
+        # conjunción (C0 AND C1 AND ... AND C9) es verdadera. 
+        # Sist. de Numeración: Esto equivale al número decimal 1023 (2^10 - 1).
+        # Eficiencia O: Revisar una fila cuesta O(1) en lugar de iterar O(n).
         # =====================================================================
         lines_cleared_indices = []
         y = self.rows - 1
@@ -194,39 +209,47 @@ class TetrisGame:
             self.pending_clear = lines_cleared_indices
             self.last_cleared_rows = lines_cleared_indices
             self.clear_time = time.time()
-            self.game_paused_until = time.time() + 0.6  # Pausa dramática para el láser
+            self.game_paused_until = time.time() + 0.6
             return 'clear'
         return None
 
     def update_gravity(self):
+        if self._state != GameState.PLAYING: return
         now = time.time()
         
-        # Ejecutar la limpieza pendiente después de la pausa
         if self.pending_clear and now >= self.game_paused_until:
             lines_cleared = len(self.pending_clear)
-            for y in sorted(self.pending_clear): # del bottom to top? wait, indices are absolute.
-                # Actually, deleting by value or index must be careful.
-                # pending_clear has the original Y coords. We just reconstruct the board without them.
-                pass
-            
-            # Reconstruir el tablero sin las filas completas
+            # =================================================================
+            # CONCEPTO 10: Conjuntos (Descenso de filas)
+            # =================================================================
+            # Cuando se elimina una línea, se hace una "Diferencia Relativa" 
+            # retirando las filas completas del conjunto, y las coordenadas Y
+            # de las filas superiores se trasladan (suman offset).
+            # =================================================================
             new_board = [row for i, row in enumerate(self.board) if i not in self.pending_clear]
             added_rows = self.rows - len(new_board)
             self.board = [0] * added_rows + new_board
             
-            # Actualizar puntaje
+            # =================================================================
+            # CONCEPTO 7: Sucesiones por Partes
+            # =================================================================
+            # El puntaje es una función por partes del número de líneas limpiadas:
+            # f(1) = 40, f(2) = 100, f(3) = 300, f(4) = 1200.
+            # =================================================================
             pts = [0, 40, 100, 300, 1200]
             self.score += pts[lines_cleared] * self.level
             self.lines += lines_cleared
             self.level = (self.lines // 10) + 1
-            
             self.pending_clear = []
-            
-        if self.game_over or now < self.game_paused_until:
-            return
         
-        # Sucesión geométrica decreciente para la gravedad
-        # Concepto: Progresión Geométrica donde la razón r = 0.85
+        if now < self.game_paused_until: return
+        
+        # =====================================================================
+        # CONCEPTO 12: Sucesiones
+        # =====================================================================
+        # La velocidad de caída se multiplica por un factor fijo (r = 0.85). 
+        # Modela una Sucesión Geométrica decreciente: a_n = 1.0 * (0.85)^(n-1)
+        # =====================================================================
         drop_interval = 1.0 * (0.85 ** (self.level - 1))
         
         if now - self.last_drop > drop_interval:
@@ -239,9 +262,16 @@ class TetrisGame:
             event = self.sweep()
             self.current_piece = self.next_piece
             self.next_piece = self.get_random_piece()
+            
+            # =================================================================
+            # CONCEPTO 6: Lógica Proposicional (Game Over)
+            # =================================================================
+            # Condición simbólica: (Posicion_Y == 0) AND (Colisión_Inmediata).
+            # Si ambas proposiciones son verdaderas, el juego termina.
+            # =================================================================
             if self.collide(self.current_piece):
-                self.game_over = True
-            return 'gameover' if self.game_over else event or 'drop'
+                self.end_game()
+            return 'gameover' if self._state == GameState.GAME_OVER else event or 'drop'
         else:
             self.current_piece['y'] += 1
             if is_manual:
@@ -249,8 +279,8 @@ class TetrisGame:
             return 'move'
             
     def do_action(self, action):
-        if self.game_over or time.time() < self.game_paused_until:
-            return None
+        if self._state != GameState.PLAYING: return None
+        if time.time() < self.game_paused_until: return None
             
         event = None
         if action == 'left':
@@ -266,8 +296,12 @@ class TetrisGame:
         elif action == 'rotate':
             self.do_rotate()
             event = 'rotate'
-            
         return event
+    
+    def do_pause(self):
+        if self._state == GameState.PLAYING: return self.pause_game()
+        elif self._state == GameState.PAUSED: return self.resume_game()
+        return False
 
 game = TetrisGame()
 
@@ -278,8 +312,6 @@ def index():
 @app.route('/state', methods=['GET'])
 def get_state():
     game.update_gravity()
-    
-    # Transformar el arreglo unidimensional (Bitboard) a matriz 2D para el frontend
     board_2d = []
     for row_int in game.board:
         board_2d.append(['X' if (row_int & (1 << x)) else 0 for x in range(game.cols)])
@@ -297,7 +329,7 @@ def get_state():
         "score": game.score,
         "level": game.level,
         "lines": game.lines,
-        "game_over": game.game_over,
+        "game_state": game.get_state().value,
         "target_score": game.get_target_score(),
         "cleared_rows": cleared_rows,
         "is_clearing": is_clearing
@@ -309,6 +341,16 @@ def action():
     act = data.get('action')
     event = game.do_action(act)
     return jsonify({"status": "ok", "event": event})
+
+@app.route('/start', methods=['POST'])
+def start():
+    success = game.start_game()
+    return jsonify({"status": "ok" if success else "invalid", "success": success})
+
+@app.route('/pause', methods=['POST'])
+def pause():
+    success = game.do_pause()
+    return jsonify({"status": "ok" if success else "invalid", "success": success, "game_state": game.get_state().value})
 
 @app.route('/reset', methods=['POST'])
 def reset():

@@ -12,6 +12,16 @@ const COLORS = {
     'X': '#888' // Color asentado
 };
 
+const GAME_STATES = {
+    START_SCREEN: 'start_screen',
+    PLAYING: 'playing',
+    PAUSED: 'paused',
+    GAME_OVER: 'game_over',
+    RESUMING: 'resuming'
+};
+
+let currentGameState = GAME_STATES.START_SCREEN;
+
 // ==========================================
 // GESTOR DE ESCENARIOS (Stage Manager)
 // ==========================================
@@ -121,8 +131,6 @@ function drawGhostBlock(context, color, x, y) {
     context.fillRect(dx + 2, dy + 2, size - 4, size - 4);
 }
 
-let gameOverFlag = false;
-
 function render(state) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -196,12 +204,42 @@ function render(state) {
 
     // Actualizar el escenario basado en el nivel
     updateStage(state.level);
+}
 
-    if (state.game_over && !gameOverFlag) {
-        document.getElementById('game-over').style.display = 'block';
-        playSound('gameover');
-        gameOverFlag = true;
+
+function updateGameStateUI(state) {
+    const gameOverScreen = document.getElementById('game-over');
+    const startScreen = document.getElementById('start-screen');
+    const pauseScreen = document.getElementById('pause-screen');
+    
+    switch(state.game_state) {
+        case GAME_STATES.START_SCREEN:
+            if (startScreen) startScreen.style.display = 'flex';
+            if (gameOverScreen) gameOverScreen.style.display = 'none';
+            if (pauseScreen) pauseScreen.style.display = 'none';
+            break;
+        
+        case GAME_STATES.PLAYING:
+            if (startScreen) startScreen.style.display = 'none';
+            if (gameOverScreen) gameOverScreen.style.display = 'none';
+            if (pauseScreen) pauseScreen.style.display = 'none';
+            break;
+        
+        case GAME_STATES.PAUSED:
+            if (pauseScreen) pauseScreen.style.display = 'flex';
+            if (startScreen) startScreen.style.display = 'none';
+            if (gameOverScreen) gameOverScreen.style.display = 'none';
+            break;
+        
+        case GAME_STATES.GAME_OVER:
+            if (gameOverScreen) gameOverScreen.style.display = 'flex';
+            if (startScreen) startScreen.style.display = 'none';
+            if (pauseScreen) pauseScreen.style.display = 'none';
+            playSound('gameover');
+            break;
     }
+    
+    currentGameState = state.game_state;
 }
 
 // ==========================================
@@ -311,7 +349,7 @@ const fakeChatMsgs = [
 ];
 
 function spawnChatMessage() {
-    if (gameOverFlag) return;
+    if (currentGameState === GAME_STATES.GAME_OVER) return;
     const name = fakeChatNames[Math.floor(Math.random() * fakeChatNames.length)];
     const msg = fakeChatMsgs[Math.floor(Math.random() * fakeChatMsgs.length)];
     
@@ -337,13 +375,20 @@ function loopFetch() {
     fetch('/state')
         .then(res => res.json())
         .then(state => {
+            updateGameStateUI(state);
+            
             if (state.is_clearing && !isClearingState) {
                 triggerBlaster(state.cleared_rows); // pasar coordenadas
                 isClearingState = true;
             } else if (!state.is_clearing) {
                 isClearingState = false;
             }
-            render(state);
+            
+            // Solo renderizar si el juego está en PLAYING
+            if (state.game_state === GAME_STATES.PLAYING) {
+                render(state);
+            }
+            
             setTimeout(loopFetch, 50);
         })
         .catch(err => setTimeout(loopFetch, 1000));
@@ -381,25 +426,76 @@ function initAudio() {
     }
 }
 
+
 document.addEventListener('keydown', event => {
-    if (gameOverFlag) return;
     initAudio();
+    
+    // Tecla P para pausar/reanudar
+    if (event.keyCode === 80) { // P
+        togglePause();
+        return;
+    }
+    
+    // Solo procesar inputs de dirección si estamos en PLAYING
+    if (currentGameState !== GAME_STATES.PLAYING) {
+        return;
+    }
+    
     if (event.keyCode === 37) sendAction('left');
     else if (event.keyCode === 39) sendAction('right');
     else if (event.keyCode === 40) sendAction('down');
     else if (event.keyCode === 38) sendAction('rotate');
 });
+
 document.addEventListener('click', initAudio);
 
-document.getElementById('retry-btn').addEventListener('click', () => {
-    fetch('/reset', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'ok') {
-                document.getElementById('game-over').style.display = 'none';
-                gameOverFlag = false;
-            }
-        });
+async function startGame() {
+    try {
+        const response = await fetch('/start', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            currentGameState = GAME_STATES.PLAYING;
+        }
+    } catch(e) {
+        console.error('Error starting game:', e);
+    }
+}
+
+async function togglePause() {
+    try {
+        const response = await fetch('/pause', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            currentGameState = data.game_state;
+        }
+    } catch(e) {
+        console.error('Error toggling pause:', e);
+    }
+}
+
+async function resetGame() {
+    try {
+        const response = await fetch('/reset', { method: 'POST' });
+        const data = await response.json();
+        if (data.status === 'ok') {
+            currentGameState = GAME_STATES.START_SCREEN;
+        }
+    } catch(e) {
+        console.error('Error resetting game:', e);
+    }
+}
+
+// Event listeners para botones
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('start-btn');
+    const retryBtn = document.getElementById('retry-btn');
+    const resumeBtn = document.getElementById('resume-btn');
+    const pauseMenuBtn = document.getElementById('pause-menu-btn');
+    
+    if (startBtn) startBtn.addEventListener('click', startGame);
+    if (retryBtn) retryBtn.addEventListener('click', resetGame);
+    if (resumeBtn) resumeBtn.addEventListener('click', togglePause);
+    if (pauseMenuBtn) pauseMenuBtn.addEventListener('click', resetGame);
 });
 
 loopFetch();
