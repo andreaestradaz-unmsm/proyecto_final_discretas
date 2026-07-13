@@ -12,6 +12,13 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 # Determinista (AFD). Los estados son los nodos y las transiciones 
 # evitan lógicamente estados inválidos (ej. pausar estando en GAME_OVER).
 # =====================================================================
+# =====================================================================
+# MEJORA 2: Máquina de Estados Finita / Autómatas
+# =====================================================================
+# Se programa el flujo del menú, la pausa y el fin de juego mediante
+# un autómata finito para controlar de forma estricta las transiciones
+# válidas entre estados y evitar movimientos inválidos del juego.
+# =====================================================================
 class GameState(Enum):
     START_SCREEN = "start_screen"
     PLAYING = "playing"
